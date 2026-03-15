@@ -29,6 +29,9 @@ dependencies {
     implementation libs.guice
 }
 
+group = "com.github.wningram"
+version = "1.0-ALPHA"
+
 // Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
