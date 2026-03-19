@@ -8,13 +8,21 @@ Build a tool that doesn't just store data, but interacts with the real world.
 
 &nbsp;
 
-**GOAL:**
+**General Acceptance Criteria:**
+
+* As a developer, I need a testing suite to enable confident pushes to production
+* As a user, I want to submit expense details that persist so that I can track my expenditures
+* As a user, I want to be able to filter on records by any fields present to streamline data reviews
+* As a user, I want to view general statistics on my spending based on active filters to better understand my spending
+* As a user, I want to view the exchange rates for various currencies, in order to understand my national net worth.
+
+**Tasks:**
 
 * Integrate a currency exchange API (like Fixer.io or Open Exchange Rates) to convert expenses into a base currency.
 * Implement JWT (JSON Web Tokens) for secure user login.
 * Use Spring Data JPA to create complex queries (e.g., "Show me all grocery spending between March and April").
 
-### Full Scope
+### Description of Learnings
 
 Building a Personal Finance Tracker is an excellent intermediate project because it forces you to move beyond basic CRUD and deal with real-world complexities like security, external data, and complex business logic.
 
