@@ -36,3 +36,6 @@ app/bin
 .project
 **/.settings/
 **/.classpath
+
+# Environment files
+.env.local
