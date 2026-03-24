@@ -3,20 +3,27 @@
  */
 package com.github.wningram.financeapp;
 
-import javax.swing.JFrame;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 
+
+@SpringBootApplication
 public class App {
-    public String getGreeting() {
-        return "Hello World!";
-    }
-
-    public void initGui(String title, int width, int height) {
-        JFrame mainFrame = new JFrame(title);
-        mainFrame.setSize(width, height);
-
-    }
+	
+	@Value("${fixer.api.key}")
+	private String fixerApiKey;
 
     public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
-    }
+		SpringApplication.run(App.class, args);
+	}
+    
+    @Bean
+    public CommandLineRunner run() {
+		return _ -> {
+			System.out.println(String.format("API Key is: %s", fixerApiKey));
+		};
+	}
 }
