@@ -5,6 +5,7 @@ import java.util.Set;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 import lombok.Data;
 
 
@@ -17,6 +18,7 @@ public class Transaction {
 	/**
 	 * The name of the seller who initiated the transaction.
 	 */
+	@ManyToOne
 	private Seller seller;
 	
 	/**
@@ -37,6 +39,7 @@ public class Transaction {
 	/**
 	 * The category the transaction is associated with.
 	 */
+	@ManyToOne
 	private Category category;
 	
 	/**
