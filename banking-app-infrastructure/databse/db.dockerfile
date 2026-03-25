@@ -4,7 +4,7 @@ FROM postgres:16
 # Set environment variables (optional defaults)
 ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWORD=postgres
-ENV POSTGRES_DB=mydb
+ENV POSTGRES_DB=finance_db
 
 # Copy initialization scripts (optional)
 # Any .sql or .sh files here will run on first startup

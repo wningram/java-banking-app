@@ -35,6 +35,7 @@ dependencies {
     
     // JPA/Hibernate for database persistence
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.postgresql:postgresql'
 
     // WebClient for calling external HTTP APIs
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
