@@ -8,8 +8,10 @@
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     id "application"
-    id("org.openjfx.javafxplugin") version("0.1.0")
+    id 'org.springframework.boot' version '4.0.3'
 }
+
+apply plugin: 'io.spring.dependency-management'
 
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -20,23 +22,36 @@ dependencies {
     // Use TestNG framework, also requires calling test.useTestNG() below
     testImplementation(libs.testng)
 
+    // Mockito for mocking WebClient and other dependencies
+    testImplementation 'org.mockito:mockito-core:5.20.0'
+    
+    // Spring Test for testing Spring Boot components (includes Mockito)
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
     // This dependency is used by the application.
     implementation(libs.guava)
+    
+    implementation libs.guice
+    
+    // JPA/Hibernate for database persistence
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.postgresql:postgresql'
+
+    // WebClient for calling external HTTP APIs
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 }
+
+group = "com.github.wningram"
+version = "1.0-ALPHA"
 
 // Apply a specific Java toolchain to ease working on different environments.
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
     }
-}
-
-javafx {
-    version = "25"
-    modules(
-        "javafx.controls",
-        "javafx.fxml"
-    )
 }
 
 application {

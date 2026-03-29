@@ -19,4 +19,50 @@ public class App {
     public static void main(String[] args) {
         System.out.println(new App().getGreeting());
     }
+=======
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+import com.github.wningram.financeapp.api.fixer.client.FixerApiClient;
+import com.github.wningram.financeapp.api.fixer.dto.LatestRatesResponse;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+
+
+@SpringBootApplication
+public class App {
+	
+	@Value("${fixer.api.key}")
+	private String fixerApiKey;
+
+    public static void main(String[] args) {
+		SpringApplication.run(App.class, args);
+	}
+    
+    @Bean
+    public CommandLineRunner run() {
+		return args -> {
+			if (args.length == 0) {
+				System.out.println("No command provided. Available commands: print-api-key, get-latest-rates");
+				return;
+			}
+			
+			switch (args[0]) {
+				case "print-api-key":
+					System.out.println(String.format("API Key is: fixerApiKey"));
+					break;
+				case "get-latest-rates":
+					// Example usage of FixerApiClient
+					FixerApiClient client = new FixerApiClient(fixerApiKey);
+					LatestRatesResponse response = client.getLatestRates();
+					System.out.println(String.format("DEBUG: %s",  response.toString()));
+					System.out.println(String.format("Base: %s, Date: %s, Rates: %s", response.getBase(), response.getDate(), response.getRates()));
+					break;
+			}
+			
+			return;
+		};
+	}
 }

@@ -1,0 +1,229 @@
+# Namespace for the banking app
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: banking-app
+---
+# Secrets: Postgres credentials and optional backend app secret (JWT secret placeholder)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: banking-secrets
+  namespace: banking-app
+type: Opaque
+stringData:
+  POSTGRES_USER: banking_user
+  POSTGRES_PASSWORD: change-me-password
+  POSTGRES_DB: banking_db
+  BACKEND_JWT_SECRET: replace-with-secure-value
+---
+# ConfigMap: Backend app config (DB host, port, other env template values)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: banking-config
+  namespace: banking-app
+data:
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_NAME: banking_db
+  # Example: change as needed
+  BACKEND_IMAGE: "ghcr.io/your-org/java-backend:latest"
+  FRONTEND_HOST: "example.com"
+---
+# PersistentVolumeClaim for Postgres data (simple dynamic storage request)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: banking-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  # StorageClassName omitted to use default storage class in cluster
+---
+# StatefulSet for Postgres
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: banking-app
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  serviceName: postgres
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: POSTGRES_DB
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 5Gi
+---
+# ClusterIP service for Postgres
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: banking-app
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+      name: postgres
+  selector:
+    app: postgres
+  clusterIP: None
+---
+# Deployment for Java backend API
+# Assumptions: backend image provided via ConfigMap or replace image field. Exposes port 8080
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-backend
+  namespace: banking-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: java-backend
+  template:
+    metadata:
+      labels:
+        app: java-backend
+    spec:
+      containers:
+        - name: java-backend
+          image: ghcr.io/your-org/java-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/banking_db
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: POSTGRES_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: banking-secrets
+                  key: BACKEND_JWT_SECRET
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+---
+# Service to expose Java backend internally
+apiVersion: v1
+kind: Service
+metadata:
+  name: java-backend
+  namespace: banking-app
+spec:
+  selector:
+    app: java-backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  type: ClusterIP
+---
+# Ingress placeholder for frontend (React) - requires an Ingress controller in the cluster
+# Replace host, className and TLS settings to match your cluster / domain
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: banking-app-ingress
+  namespace: banking-app
+  annotations:
+    # Example: nginx ingress class - change if needed
+    kubernetes.io/ingress.class: "nginx"
+    # Uncomment and configure cert-manager or other TLS if available
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  rules:
+    - host: example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: java-backend
+                port:
+                  number: 8080
+  # tls:
+  #   - hosts:
+  #       - example.com
+  #     secretName: example-com-tls
+
+# End of manifest
+# Assumptions and next steps:
+# - Replace image locations (ghcr.io/your-org/...) with your actual container images.
+# - Replace example.com with your real domain and configure TLS if needed.
+# - The Postgres StatefulSet uses a single replica and per-pod PVC; adjust for HA if required.
+# - If your cluster requires a specific storageClass, add storageClassName to PVCs.

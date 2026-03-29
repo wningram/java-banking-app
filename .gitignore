@@ -28,3 +28,17 @@ replay_pid*
 
 # Ignore Gradle build output directory
 build
+gradlew
+gradlew.bat
+
+# Ignore Gradle build output directory
+build
+app/bin
+
+#  Eclipse project files
+.project
+**/.settings/
+**/.classpath
+
+# Environment files
+.env.local
