@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 
 @Data
 @AllArgsConstructor
-public class Rates {
+public class Rate {
 	
 	public String currencyCode;
 	

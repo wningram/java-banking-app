@@ -1,4 +1,6 @@
-package com.github.wningram.financeapp.api.fixer.dto;
+package com.github.wningram.financeapp.api.fixer;
+
+import com.github.wningram.financeapp.api.fixer.dto.Rate;
 
 import lombok.Getter;
 import lombok.AllArgsConstructor;
@@ -12,6 +14,6 @@ public class LatestRatesResponse {
 	
 	private String date;
 	
-	private Rates rates;
+	private Rate[] rates;
 
 }
