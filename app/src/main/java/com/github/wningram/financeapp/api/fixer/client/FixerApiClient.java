@@ -1,13 +1,13 @@
 package com.github.wningram.financeapp.api.fixer.client;
 
-import com.github.wningram.financeapp.api.fixer.dto.LatestRatesResponse;
-import com.github.wningram.financeapp.api.fixer.dto.Rates;
+import com.github.wningram.financeapp.api.fixer.LatestRatesResponse;
+import com.github.wningram.financeapp.api.fixer.dto.Rate;
 
+import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.http.HttpStatusCode;
 import reactor.core.publisher.Mono;
 
@@ -33,29 +33,28 @@ public class FixerApiClient {
         this.webClient = webClient;
     }
 
-    public LatestRatesResponse getLatestRates() {
-        try {
-            // Build request: /latest?access_key={apiKey}
-            Mono<LatestRatesResponse> mono = webClient.get()
-                    .uri(uriBuilder -> uriBuilder.path("/latest").queryParam("access_key", apiKey).build())
-                    .retrieve()
-                    .onStatus(HttpStatusCode::isError, ClientResponse::createException)
-                    .bodyToMono(LatestRatesResponse.class)
-                    .timeout(Duration.ofSeconds(10));
-
-            // Block for now to return a synchronous value; callers can be refactored to reactive if desired
-            LatestRatesResponse response = mono.block();
-            if (response == null) {
-                // Fallback minimal response
-                Rates rates = new Rates("USD", 1.0);
-                return new LatestRatesResponse("USD", "1970-01-01", rates);
-            }
-            return response;
-        } catch (Exception e) {
-            // Log/propagate as needed - for now return a simple fallback object
-            Rates rates = new Rates("USD", 1.0);
-            return new LatestRatesResponse("USD", "1970-01-01", rates);
-        }
+    public Mono<LatestRatesResponse> getLatestRates() {
+    	return getLatestRates(); // Default base currency for free plan
     }
 
+    public Mono<LatestRatesResponse> getLatestRates(@Nullable String baseCurrency) {
+		try {
+			return webClient.get()
+					.uri(uriBuilder -> uriBuilder.path("/latest")
+							.queryParam("access_key", apiKey)
+							.queryParam("base", baseCurrency)
+							.build())
+					.retrieve()
+					.onStatus(HttpStatusCode::isError, ClientResponse::createException)
+					.bodyToMono(LatestRatesResponse.class)
+					.timeout(Duration.ofSeconds(10));
+
+		} catch (Exception e) {
+			// Log/propagate as needed - for now return a simple fallback object
+			System.err.println("Error fetching latest rates from Fixer API: " + e.getMessage());
+
+			Rate[] rates = new Rate[] { new Rate("USD", 1.0) };
+			return Mono.just(new LatestRatesResponse(baseCurrency != null ? baseCurrency : "EUR", "2024-01-01", rates));
+		}
+	}
 }

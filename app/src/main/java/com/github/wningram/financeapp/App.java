@@ -3,30 +3,17 @@
  */
 package com.github.wningram.financeapp;
 
-import javax.swing.JFrame;
-
-public class App {
-    public String getGreeting() {
-        return "Hello World!";
-    }
-
-    public void initGui(String title, int width, int height) {
-        JFrame mainFrame = new JFrame(title);
-        mainFrame.setSize(width, height);
-
-    }
-
-    public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
-    }
-=======
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
+import com.github.wningram.financeapp.api.fixer.LatestRatesResponse;
 import com.github.wningram.financeapp.api.fixer.client.FixerApiClient;
-import com.github.wningram.financeapp.api.fixer.dto.LatestRatesResponse;
+import com.github.wningram.financeapp.api.fixer.dto.Rate;
 
+import reactor.core.publisher.Mono;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 
@@ -36,6 +23,9 @@ public class App {
 	
 	@Value("${fixer.api.key}")
 	private String fixerApiKey;
+	
+	@Autowired
+	private FixerApiClient fixerApiClient;
 
     public static void main(String[] args) {
 		SpringApplication.run(App.class, args);
@@ -55,10 +45,14 @@ public class App {
 					break;
 				case "get-latest-rates":
 					// Example usage of FixerApiClient
-					FixerApiClient client = new FixerApiClient(fixerApiKey);
-					LatestRatesResponse response = client.getLatestRates();
-					System.out.println(String.format("DEBUG: %s",  response.toString()));
-					System.out.println(String.format("Base: %s, Date: %s, Rates: %s", response.getBase(), response.getDate(), response.getRates()));
+					Mono<LatestRatesResponse> response = fixerApiClient.getLatestRates();
+					response.map(ratesResponse -> {
+						System.out.println(String.format("Base: %s, Date: %s", ratesResponse.getBase(), ratesResponse.getDate()));
+						for (Rate rate : ratesResponse.getRates()) {
+							System.out.println(String.format("Currency: %s, Rate: %s", rate.getCurrencyCode(), rate.getRate()));
+						}
+						return ratesResponse;
+					});
 					break;
 			}
 			

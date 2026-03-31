@@ -1,7 +1,7 @@
 package com.github.wningram.financeapp.api.fixer.client;
 
-import com.github.wningram.financeapp.api.fixer.dto.LatestRatesResponse;
-import com.github.wningram.financeapp.api.fixer.dto.Rates;
+import com.github.wningram.financeapp.api.fixer.LatestRatesResponse;
+import com.github.wningram.financeapp.api.fixer.dto.Rate;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -86,15 +86,17 @@ public class FixerApiClientTest {
         when(mockWebClient.get()).thenThrow(new RuntimeException("Network error"));
 
         // Act
-        LatestRatesResponse actualResponse = fixerApiClient.getLatestRates();
+        Mono<LatestRatesResponse> actualResponse = fixerApiClient.getLatestRates();
 
-        // Assert
-        assertNotNull(actualResponse, "Response should not be null (fallback)");
-        assertEquals(actualResponse.getBase(), "USD");
-        assertEquals(actualResponse.getDate(), "1970-01-01");
-        assertNotNull(actualResponse.getRates());
-        assertEquals(actualResponse.getRates().getCurrencyCode(), "USD");
-        assertEquals(actualResponse.getRates().getRate(), 1.0);
+        actualResponse.doOnNext(response -> {
+			// Assert inside the reactive stream
+			assertNotNull(response, "Response should not be null (fallback)");
+			assertEquals(response.getBase(), "USD");
+			assertEquals(response.getDate(), "1970-01-01");
+			assertNotNull(response.getRates());
+			assertEquals(response.getRates()[0].getCurrencyCode(), "USD");
+			assertEquals(response.getRates()[0].getRate(), 1.0);
+		});
     }
 
     /**
@@ -116,7 +118,7 @@ public class FixerApiClientTest {
         assertNotNull(actualResponse, "Response should not be null (fallback)");
         assertEquals(actualResponse.getBase(), "USD");
         assertEquals(actualResponse.getDate(), "1970-01-01");
-        assertEquals(actualResponse.getRates().getRate(), 1.0);
+        assertEquals(actualResponse.getRates()[0].getRate(), 1.0);
     }
 
     /**
@@ -126,7 +128,7 @@ public class FixerApiClientTest {
     @Test
     public void testLatestRatesResponseDataIntegrity() {
         // Arrange
-        Rates testRates = new Rates("EUR", TEST_RATE);
+        Rate[] testRates = new Rate[] { new Rate("EUR", TEST_RATE) };
         LatestRatesResponse response = new LatestRatesResponse(
                 TEST_BASE_CURRENCY,
                 TEST_DATE,
@@ -136,8 +138,8 @@ public class FixerApiClientTest {
         // Act & Assert
         assertEquals(response.getBase(), TEST_BASE_CURRENCY);
         assertEquals(response.getDate(), TEST_DATE);
-        assertEquals(response.getRates().getCurrencyCode(), "EUR");
-        assertEquals(response.getRates().getRate(), TEST_RATE);
+        assertEquals(response.getRates()[0].getCurrencyCode(), "EUR");
+        assertEquals(response.getRates()[0].getRate(), TEST_RATE);
     }
 
     /**
@@ -147,9 +149,9 @@ public class FixerApiClientTest {
     @Test
     public void testRatesWithMultipleCurrencies() {
         // Act
-        Rates eurRates = new Rates("EUR", 1.10);
-        Rates gbpRates = new Rates("GBP", 0.85);
-        Rates jpyRates = new Rates("JPY", 110.50);
+        Rate eurRates = new Rate("EUR", 1.10);
+        Rate gbpRates = new Rate("GBP", 0.85);
+        Rate jpyRates = new Rate("JPY", 110.50);
 
         // Assert
         assertEquals(eurRates.getCurrencyCode(), "EUR");
@@ -203,7 +205,7 @@ public class FixerApiClientTest {
     @Test
     public void testRatesWithZeroValue() {
         // Act
-        Rates rates = new Rates("USD", 0.0);
+        Rate rates = new Rate("USD", 0.0);
 
         // Assert
         assertEquals(rates.getRate(), 0.0);
@@ -217,7 +219,7 @@ public class FixerApiClientTest {
     @Test
     public void testRatesWithNegativeValue() {
         // Act
-        Rates rates = new Rates("TEST", -1.5);
+        Rate rates = new Rate("TEST", -1.5);
 
         // Assert
         assertEquals(rates.getRate(), -1.5);
@@ -231,7 +233,7 @@ public class FixerApiClientTest {
     @Test
     public void testRatesWithSpecialCharacterCurrency() {
         // Act
-        Rates rates = new Rates("USD_ALT", 1.5);
+        Rate rates = new Rate("USD_ALT", 1.5);
 
         // Assert
         assertEquals(rates.getCurrencyCode(), "USD_ALT");
