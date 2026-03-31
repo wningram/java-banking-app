@@ -1,6 +1,11 @@
 # Use official Postgres image
 FROM postgres:16
 
+LABEL app="java-banking-app" \
+      component="database" \
+      version="1.0" \
+      description="PostgreSQL database for Java Banking Application"
+
 # Set environment variables (optional defaults)
 ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWORD=postgres
