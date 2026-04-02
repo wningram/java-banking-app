@@ -7,11 +7,14 @@ import jakarta.annotation.Nullable;
 import lombok.AllArgsConstructor;
 
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatusCode;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.Map;
 
 @AllArgsConstructor
 public class FixerApiClient {
@@ -32,10 +35,10 @@ public class FixerApiClient {
         this.apiKey = apiKey;
         this.webClient = webClient;
     }
-
+    
     public Mono<LatestRatesResponse> getLatestRates() {
-    	return getLatestRates(); // Default base currency for free plan
-    }
+		return getLatestRates(null);
+	}
 
     public Mono<LatestRatesResponse> getLatestRates(@Nullable String baseCurrency) {
 		try {
@@ -47,6 +50,11 @@ public class FixerApiClient {
 					.retrieve()
 					.onStatus(HttpStatusCode::isError, ClientResponse::createException)
 					.bodyToMono(LatestRatesResponse.class)
+					.doOnError(WebClientResponseException.class,  e -> {
+						Map<String, Object> errorBody = e.getResponseBodyAs(new ParameterizedTypeReference<Map<String, Object>>() {});
+						System.err.println(String.format("Error response from Fixer API: %s", errorBody));
+					})
+					.onErrorReturn(new LatestRatesResponse(baseCurrency != null ? baseCurrency : "EUR", "2024-01-01", new Rate[] { new Rate("USD", 1.0) }))
 					.timeout(Duration.ofSeconds(10));
 
 		} catch (Exception e) {
