@@ -45,7 +45,7 @@ public class App {
 					break;
 				case "get-latest-rates":
 					// Example usage of FixerApiClient
-					Mono<LatestRatesResponse> response = fixerApiClient.getLatestRates();
+					Mono<LatestRatesResponse> response = fixerApiClient.getLatestRates(null);
 					response.map(ratesResponse -> {
 						System.out.println(String.format("Base: %s, Date: %s", ratesResponse.getBase(), ratesResponse.getDate()));
 						for (Rate rate : ratesResponse.getRates()) {

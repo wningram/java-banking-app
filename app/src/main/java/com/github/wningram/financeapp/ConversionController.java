@@ -26,18 +26,17 @@ public class ConversionController {
 	}
 	
 	@GetMapping
-	public Mono<Rate> convertCurrency(@RequestParam String fromCurrency, @RequestParam String toCurrency) {
-		String fromCurrencyUpper = fromCurrency.toUpperCase();
+	public Mono<Rate> convertCurrency(@RequestParam String toCurrency) {
 		String toCurrencyUpper = toCurrency.toUpperCase();
 		
 		// Check db cache for recent conversion rate
-		RateEntity resultRate = rateRepository.findByCurrencyCode(fromCurrencyUpper);
+		RateEntity resultRate = rateRepository.findByCurrencyCode(toCurrencyUpper);
 		if (resultRate != null) {
 			return Mono.just(new Rate(resultRate.getCurrencyCode(), resultRate.getRate()));
 		}
 		
-		System.out.println(String.format("No cached conversion rate found for %s -> %s. Fetching from API...", fromCurrencyUpper, toCurrencyUpper));
-		Mono<LatestRatesResponse> response = fixerApiClient.getLatestRates(fromCurrencyUpper);
+		System.out.println(String.format("No cached conversion rate found for %s -> %s. Fetching from API...", "EUR", toCurrencyUpper));
+		Mono<LatestRatesResponse> response = fixerApiClient.getLatestRates();
 		Mono<Rate> rateDto = response.map(ratesResponse -> {
 			try {
 				for (Rate rate : ratesResponse.getRates()) {
@@ -46,7 +45,7 @@ public class ConversionController {
 						// Cache the result in the db
 						RateEntity rateEntity = new RateEntity(rate.getCurrencyCode(), rate.getRate());
 						rateRepository.save(rateEntity);
-						System.out.println(String.format("Fetched conversion rate from API: %s -> %s = %s", fromCurrencyUpper, toCurrencyUpper, rate.getRate()));
+						System.out.println(String.format("Fetched conversion rate from API: %s -> %s = %s", "EUR", toCurrencyUpper, rate.getRate()));
 						System.out.println("Cached conversion rate in database.");
 
 						return rate;
@@ -55,7 +54,7 @@ public class ConversionController {
 			} catch (Exception e) {
 				System.err.println("Error processing API response: " + e.getMessage());
 			}
-			return null; // No matching currency found in API response
+			return new Rate(toCurrencyUpper, 1.0); // No matching currency found in API response, return default rate
 		});
 		
 		return rateDto;
