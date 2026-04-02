@@ -9,7 +9,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import reactor.core.publisher.Mono;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.testng.Assert.*;
 
@@ -86,7 +85,7 @@ public class FixerApiClientTest {
         when(mockWebClient.get()).thenThrow(new RuntimeException("Network error"));
 
         // Act
-        Mono<LatestRatesResponse> actualResponse = fixerApiClient.getLatestRates();
+        Mono<LatestRatesResponse> actualResponse = fixerApiClient.getLatestRates(null);
 
         actualResponse.doOnNext(response -> {
 			// Assert inside the reactive stream
@@ -112,13 +111,17 @@ public class FixerApiClientTest {
         FixerApiClient testClient = new FixerApiClient(TEST_API_KEY, realWebClient);
 
         // Act - This will timeout and return null
-        LatestRatesResponse actualResponse = testClient.getLatestRates();
+        Mono<LatestRatesResponse> actualResponse = testClient.getLatestRates(null);
 
         // Assert
-        assertNotNull(actualResponse, "Response should not be null (fallback)");
-        assertEquals(actualResponse.getBase(), "USD");
-        assertEquals(actualResponse.getDate(), "1970-01-01");
-        assertEquals(actualResponse.getRates()[0].getRate(), 1.0);
+        actualResponse.doOnNext(response -> {
+        				assertNotNull(response, "Response should not be null (fallback)");
+			assertEquals(response.getBase(), "USD");
+			assertEquals(response.getDate(), "1970-01-01");
+			assertNotNull(response.getRates());
+			assertEquals(response.getRates()[0].getCurrencyCode(), "USD");
+			assertEquals(response.getRates()[0].getRate(), 1.0);
+        });
     }
 
     /**
